@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>IANA Assistente</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        button {
+            padding: 15px 25px;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: green;
+            color: white;
+        }
+
+        .gravando {
+            background: red;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>🎙️ IANA</h2>
+    <button id="btn">🎤 Iniciar</button>
+    <p id="output">Pronto...</p>
+
+    <script>
+        // ==========================
+        // CONFIG
+        // ==========================
+        const API_URL = "http://localhost:3000/api";
+
+        // ==========================
+        // ESTADO GLOBAL
+        // ==========================
+        let ativo = false;
+        let falando = false;
+
+        // ==========================
+        // ELEMENTOS
+        // ==========================
+        const btn = document.getElementById("btn");
+        const output = document.getElementById("output");
+
+        // ==========================
+        // SPEECH RECOGNITION
+        // ==========================
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const rec = new SR();
+
+        rec.lang = "pt-BR";
+        rec.interimResults = false;
+        rec.continuous = false;
+
+        // ==========================
+        // BOTÃO
+        // ==========================
+        btn.onclick = () => {
+            ativo ? parar() : iniciar();
+        };
+
+        function iniciar() {
+            ativo = true;
+            btn.innerText = "⛔ Parar";
+            btn.classList.add("gravando");
+            startSafe();
+        }
+
+        function parar() {
+            ativo = false;
+            rec.stop();
+            btn.innerText = "🎤 Iniciar";
+            btn.classList.remove("gravando");
+        }
+
+        // ==========================
+        // START SEGURO
+        // ==========================
+        function startSafe() {
+            if (!ativo || falando) return;
+
+            try {
+                rec.start();
+                output.innerText = "🎤 Ouvindo...";
+            } catch { }
+        }
+
+        // ==========================
+        // RESULTADO
+        // ==========================
+        rec.onresult = async (e) => {
+
+            const texto = e.results[0][0].transcript;
+
+            output.innerText = "Você: " + texto;
+
+            try {
+                const resposta = await perguntar(texto);
+                falar(resposta);
+            } catch {
+                falar("Erro.");
+            }
+        };
+
+        // ==========================
+        // AUTO RESTART (CHAVE DO SISTEMA)
+        // ==========================
+        rec.onend = () => {
+            if (ativo && !falando) {
+                setTimeout(startSafe, 400);
+            }
+        };
+
+        rec.onerror = (e) => {
+            if (e.error === "no-speech") return;
+            console.warn("Erro:", e.error);
+        };
+
+        // ==========================
+        // API
+        // ==========================
+        async function perguntar(texto) {
+
+            const r = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    model: "llama-3.3-70b-versatile",
+                    max_tokens: 30,
+                    messages: [
+                        { role: "system", content: "Responda curto, direto, 1 frase." },
+                        { role: "user", content: texto }
+                    ]
+                })
+            });
+
+            const d = await r.json();
+            return limpar(d.choices[0].message.content);
+        }
+
+        // ==========================
+        // LIMPAR TEXTO
+        // ==========================
+        function limpar(t) {
+            return t.replace(/\*.*?\*/g, "")
+                .replace(/\n/g, " ")
+                .trim();
+        }
+
+        // ==========================
+        // VOZ FEMININA
+        // ==========================
+        let vozes = [];
+
+        speechSynthesis.onvoiceschanged = () => {
+            vozes = speechSynthesis.getVoices();
+        };
+
+        function vozFeminina() {
+
+            return vozes.find(v =>
+                v.lang.includes("pt") &&
+                (v.name.toLowerCase().includes("maria") ||
+                    v.name.toLowerCase().includes("female") ||
+                    v.name.toLowerCase().includes("google"))
+            ) || vozes.find(v => v.lang.includes("pt"));
+        }
+
+        // ==========================
+        // FALAR
+        // ==========================
+        function falar(texto) {
+
+            if (!texto) return;
+
+            falando = true;
+            rec.stop();
+
+            speechSynthesis.cancel();
+
+            const s = new SpeechSynthesisUtterance(texto);
+
+            const v = vozFeminina();
+            if (v) {
+                s.voice = v;
+                s.lang = v.lang;
+            }
+
+            s.pitch = 1.2;
+
+            s.onend = () => {
+                falando = false;
+                if (ativo) startSafe();
+            };
+
+            speechSynthesis.speak(s);
+        }
+    </script>
+
+</body>
+
+</html>
