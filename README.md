@@ -25,7 +25,7 @@ Tudo isso rodando com:
 
 * Frontend puro (HTML + JS)
 * Backend Node.js
-* Integração com LLM (Groq / Llama) <--- Preciso de um cadastro no site do Groq e criar um API (grátis porém limitado/Otimo lilmite para laboratorios para varios projetos)
+* Integração com LLM (Groq / Llama) <--- **Vai precisar de um cadastro no site do Groq e criar um API (grátis porém limitado/Otimo lilmite para laboratorios para varios projetos)**
 
 ---
 
@@ -66,7 +66,7 @@ SpeechSynthesis API 🔊
 
 ### IA
 
-LLM: Llama 3 (via Groq) <--- Versão **lLama-3.3-70b-versatile** limitada treinada até ano 2023
+LLM: Llama 3 (via Groq) **<--- Versão **lLama-3.3-70b-versatile** limitada treinada até ano 2023**
 
 ---
 
