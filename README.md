@@ -1,4 +1,4 @@
-# 🎙️ IANA — Assistente de Voz com IA
+# 🎙️ iANA — Assistente de Voz com IA
 
 > Um assistente de voz simples, rápido e direto ao ponto.
 > Sem enrolação, sem firula — só pergunta e resposta.
